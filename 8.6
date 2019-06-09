@@ -1,0 +1,112 @@
+import numpy as np
+import tensorflow as tf
+import os
+import time
+import keras
+from PIL import Image
+from keras.applications.resnet50 import ResNet50
+from keras.preprocessing import image
+from keras.layers import GlobalAveragePooling2D, Dense, Dropout, Activation, Flatten
+from keras.applications.imagenet_utils import preprocess_input
+from keras.layers import Input
+from keras.models import Model
+from keras.utils import np_utils
+from sklearn.utils import shuffle
+import random
+from sklearn.model_selection import train_test_split
+from scipy.io import loadmat
+from skimage import util
+from skimage.transform import rotate
+from skimage.util import random_noise
+import matplotlib.pyplot as plt
+from sklearn.metrics import precision_recall_curve
+from sklearn.metrics import average_precision_score
+from sklearn.utils.fixes import signature
+
+def rotate(image,degrees_to_rotate,outfile, img ):
+    Rotate_image = []
+    image_rotate = image
+    count = '0'
+    for i in range(0,8):
+        image_rotate = image_rotate.rotate(degrees_to_rotate*i)
+        count = count.replace(count, str(int(count)+1)) # In order to save the different pictures
+        #image_rotate.save(outfile + count + '' + img, "JPEG")
+        #image_rotate.show()
+        Rotate_image.append(image_rotate)
+    return Rotate_image
+
+def creatingDataSet(CATAGORIES,IMAGE_SIZE, area, IMAGE_DATA, LABELS_DATA, outfile):
+    for catagories in CATAGORIES:
+        PATH = "C:\\Users\\Lenovo\\Desktop\\125MEDIA\\hggg" # where the new pictures will be saved
+        path = os.path.join(data_path, catagories)  # pass on every pictures files
+        temp = 1
+        outfile = PATH + "\hggg"
+        print(catagories)  # see what categories there is
+        for img in os.listdir(path):
+            if temp <= 2:
+                img_path = path + '\\' + str(img)
+                picture = Image.open(img_path)
+                picture_crop = picture.crop(area)
+                new_image = Image.new("RGB", (picture_crop.width, picture_crop.height))
+                new_image.paste(picture_crop)  # Crops the bottom square of the device
+                # new_image.show()
+                for i in rotate(new_image, 45, outfile, img):
+                    resize_img = i.resize((224, 224), Image.ANTIALIAS)
+                    LABELS_DATA.append(str(catagories))
+                    x = image.img_to_array(resize_img)
+                    x = np.expand_dims(x, axis=0)
+                    IMAGE_DATA.append(x) #
+                temp = temp + 1
+            else:
+                break
+
+    print(IMAGE_DATA.__len__(), LABELS_DATA.__len__())
+    return None
+
+def main(data_path):
+    CATAGORIES = ["‏‏Optalgin_500_Old", "Cardiloc", "Clod", "Danol", "Etopan_500", "Optalgin_500_New", "Quetiapine_25", "Quetiapine_200"]
+    IMAGE_SIZE= 1000
+    area = (IMAGE_SIZE,(IMAGE_SIZE/2)-200,IMAGE_SIZE+2000+400,IMAGE_SIZE+2000)#creating the box for the medicine
+    IMAGE_DATA = []
+    LABELS_DATA = []
+    outfile = []
+    creatingDataSet(CATAGORIES, IMAGE_SIZE, area, IMAGE_DATA, LABELS_DATA,outfile)  # creates the updated dataset
+    # Data initiation
+
+    # divide the data to train and test
+
+    # The Image part
+    IMAGE_DATA = np.array(IMAGE_DATA)
+    IMAGE_DATA = np.rollaxis(IMAGE_DATA, 1, 0)
+    IMAGE_DATA = IMAGE_DATA[0]
+    x_train = IMAGE_DATA[0:100, :, :]
+    x_test = IMAGE_DATA[100:, :, :]
+    # print("x_train")
+    # print(x_train.__len__())
+    # print("x_test")
+    # print(x_test.__len__())
+
+
+    # The Lables part
+    Y = LABELS_DATA
+        #Y = np.rollaxis(Y, 1, 0)
+        #Y = np_utils.to_categorical(Y, 8)'''
+    y_train = Y[0:100]
+    y_test = Y[100:128]
+    x_train, x_test, y_train, y_test = train_test_split(x_train, y_train, test_size=0.2, random_state=2)
+    # set 0.2 of the picturs to ba validation
+
+
+    ''' # print("y_train")
+    # print(y_train.__len__())
+    # print("y_test")
+    # print(y_test.__len__())
+
+    # x_aug, y_aug = data_aug(X_train, Y_train)
+    # num_class = 2'''
+
+if __name__== "__main__":
+    data_path = "C:\\Users\\Lenovo\\Desktop\\125MEDIA"
+    main(data_path)
+
+
